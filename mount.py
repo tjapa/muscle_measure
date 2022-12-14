@@ -116,7 +116,7 @@ class Registrator:
 
     def getTransform(self, i1, i2):
         shape = self.images[i1].shape
-        res1 = self.segmentations[i1]
+        # res1 = self.segmentations[i1]
         
         kernel = np.ones((5,5), np.uint8) 
 
@@ -125,28 +125,28 @@ class Registrator:
             im1 = self.images[i1].copy()
             
             
-            im1[cv2.dilate((res1 != i).astype('u1'), kernel, iterations=1).astype(np.bool) ] = 0
+            # im1[cv2.dilate((res1 != i).astype('u1'), kernel, iterations=1).astype(np.bool) ] = 0
             imgs1.append(im1)
 
         
-        res2 = self.segmentations[i2]
+        # res2 = self.segmentations[i2]
         im2 = self.images[i2].copy()
         imgs2 = []
         for i in range(2, self.nbClasses): 
             im2 = self.images[i2].copy()
-            im2[cv2.dilate((res2 != i).astype('u1'), kernel, iterations=1).astype(np.bool) ] = 0
+            # im2[cv2.dilate((res2 != i).astype('u1'), kernel, iterations=1).astype(np.bool) ] = 0
             imgs2.append(im2)
         
         
         M = np.float32([[1,0,0],[0,1,shape[0]//2]])
-        show_img1 = cv2.warpAffine(self.images[i1].copy(),M,(shape[1] * 2,shape[0] * 2 ))
+        # show_img1 = cv2.warpAffine(self.images[i1].copy(),M,(shape[1] * 2,shape[0] * 2 ))
         dst1 = []
         for i in range(2, self.nbClasses):
             dst1.append(cv2.warpAffine(imgs1[i - 2],M,(shape[1] * 2,shape[0] * 2 )))
 
-        if _DEBUG and 0:
-            plt.imshow(np.hstack((im1, im2)))
-            plt.show()
+        #if _DEBUG and 0:
+        #    plt.imshow(np.hstack((im1, im2)))
+        #    plt.show()
         def call_back(x, convergence=0. ):
             print(list(x), convergence)
             m2 = M.copy()
@@ -157,8 +157,8 @@ class Registrator:
             R = cv2.getRotationMatrix2D((M[0, 2],M[1, 2]),(x[2]),1)
             dst2 = cv2.warpAffine(dst2,R,(shape[1] * 2,shape[0] * 2 ))
             
-            cv2.imshow('get_transform', np.max(np.array([show_img1,dst2]), axis=0))
-            cv2.waitKey(20)
+            # cv2.imshow('get_transform', np.max(np.array([show_img1,dst2]), axis=0))
+            # cv2.waitKey(20)
 
 
         def func(x):
@@ -191,9 +191,11 @@ class Registrator:
     def run(self):
         transfoms = []
         shape = self.images[0].shape
+        print("SHAPEADO")
+        print(shape)
         transfoms.append([0, shape[0]//2, 0])
         
-        self.seg_images()
+        # self.seg_images()
 
         for k, im in enumerate(self.images):
             gray = np.ascontiguousarray(cv2.cvtColor(im, cv2.COLOR_BGR2GRAY))
@@ -217,13 +219,14 @@ class Registrator:
         sz = 4
         M = np.float32([[1,0,0],[0,1,shape[0]//2]])
         
-        print("Start Recorder")
-        cv2.waitKey(0)
+        # print("Start Recorder")
+        # cv2.waitKey(0)
 
         blended_images = []
         rimages = self.images[::-1]
         for i in range(0, len(self.images)-1):
             dst2 = rimages[i].copy()
+            dst2 = cv2.cvtColor(dst2, cv2.COLOR_GRAY2RGBA)
             rtransfoms = transfoms[::-1]
             for k in range(i,len(transfoms)-1):
                 T = np.array(rtransfoms[k])
@@ -234,32 +237,38 @@ class Registrator:
                 else:
                     M2[0, 2] = T[0]
                     M2[1, 2] = T[1]
-                dst2 = cv2.warpAffine(dst2,M2,(shape[1] * sz,shape[0] * sz ))
+                dst2 = cv2.warpAffine(dst2,M2,(shape[1] * sz,shape[0] * sz ), borderValue=(0,0,0,1))
                 # cv2.imshow("MountView", np.max(np.array([*blended_images, dst2.astype('uint8')]), axis=0))
                 # cv2.waitKey(500)
                 R = cv2.getRotationMatrix2D((M[0, 2],M[1, 2]),(T[2]),1)
-                dst2 = cv2.warpAffine(dst2,R,(shape[1] * sz,shape[0] * sz ))
-                cv2.imshow("MountView", np.max(np.array([*blended_images, dst2.astype('uint8')]), axis=0))
-                cv2.waitKey(700)
+                dst2 = cv2.warpAffine(dst2,R,(shape[1] * sz,shape[0] * sz ), borderValue=(0,0,0,1))
+                # cv2.imshow("MountView", np.max(np.array([*blended_images, dst2.astype('uint8')]), axis=0))
+                # cv2.waitKey(700)
                 
             blended_images.append(dst2)
             final_image = np.max(np.array(blended_images), axis=0)
-            cv2.imshow("MountView", final_image.astype('uint8'))
-            cv2.waitKey(2000)
+            # cv2.imshow("MountView", final_image.astype('uint8'))
+            # cv2.waitKey(2000)
         dst2 = rimages[-1].copy()
+        dst2 = cv2.cvtColor(dst2, cv2.COLOR_GRAY2RGBA)
         M2 = M.copy()
-        dst2 = cv2.warpAffine(dst2,M2,(shape[1] * sz,shape[0] * sz ))
+        dst2 = cv2.warpAffine(dst2,M2,(shape[1] * sz,shape[0] * sz ), borderValue=(0,0,0,1))
         blended_images.append(dst2)
+
+        print(blended_images)
 
         final_image = np.max(np.array(blended_images), axis=0)
 
-        final_image = cv2.normalize(final_image,None,0,255,cv2.NORM_MINMAX)
+        # final_image = cv2.normalize(final_image,None,0,255,cv2.NORM_MINMAX)
 
         final_image = final_image.astype('uint8')
 
-        final_image = self.crop_image(final_image)
-        cv2.imshow("MountView", final_image)
-        cv2.waitKey(0)
+        # cv2.imshow("MountView", final_image)
+        # cv2.show()
+        
+        # final_image = self.crop_image(final_image)
+        # cv2.imshow("MountView", final_image)
+        # cv2.waitKey(0)
         cv2.imwrite(self.output_path, final_image)
         print(self.output_path)
 
@@ -271,9 +280,9 @@ class Registrator:
 
 
 def main():
-    cv2.namedWindow('MountView', cv2.WINDOW_NORMAL)
+    # cv2.namedWindow('MountView', cv2.WINDOW_NORMAL)
 
-    cv2.namedWindow('get_transform', cv2.WINDOW_NORMAL)
+    # cv2.namedWindow('get_transform', cv2.WINDOW_NORMAL)
     # cv2.namedWindow('debug', cv2.WINDOW_NORMAL)
     list_files = glob.glob('./MONTAGEM/**/*.tif*', recursive=True)
     # list_files = glob.glob('/home/diegogomes/dev/deivid/MODELO MONTAGEM TESTE/TAKATA/VLD POS/IMAGEM CORTADA VLD/*.tif', recursive=True)
